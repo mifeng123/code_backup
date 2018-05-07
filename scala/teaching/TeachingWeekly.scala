@@ -100,22 +100,22 @@ object TeachingWeekly {
     val str_drop_tclg=s""" drop table test.teaching_condition_list_grade """.stripMargin
     sql(str_drop_tclg)
     val str_create_tclg=s""" create table test.teaching_condition_list_grade as
-                           |select cast(concat('${DAY}',row_number() over()) as bigint) id,h.org_id org_id,eg.id grade_id,h.stage_id stage_id,2 public_private,'${DATE}' time from
-                           |(select org_id,stage_id  from test.subject_stage group by org_id,stage_id) h
+                           |select cast(concat('${DAY}',row_number() over()) as bigint) id,h.org_id org_id,eg.id grade_id,h.stage_id stage_id,h.org_type public_private,'${DATE}' time from
+                           |(select org_id,org_type,stage_id  from test.subject_stage group by org_id,org_type,stage_id) h
                            |join neworiental_v3.entity_grade eg on eg.stage_id=h.stage_id  """.stripMargin
     sql(str_create_tclg)
     val str_drop_tclw=s""" drop table test.teaching_condition_list_week """.stripMargin
     sql(str_drop_tclw)
     val str_create_tclw=s""" create table test.teaching_condition_list_week as
                            | select cast(concat('${DAY}',row_number() over()) as bigint) id,h.org_id org_id,year('${DATE6AGO}') leran_year, weekofyear('${DATE}') leran_week,'${DATE6AGO}'  monday,'${DATE}' sunday,
-                           | 2 public_private,'${DATE}' time from
-                           |(select org_id  from test.subject_stage group by org_id) h """.stripMargin
+                           | h.org_type public_private,'${DATE}' time from
+                           |(select org_id,org_type  from test.subject_stage group by org_id,org_type) h """.stripMargin
     sql(str_create_tclw)
 
     val str_drop_tous=s""" drop table test.teaching_overall_usage """.stripMargin
     sql(str_drop_tous)
     val str_create_tous=s""" create table test.teaching_overall_usage as select cast(concat('${DAY}',row_number() over()) as bigint) id,h.* from
-                           | (select distinct  h_user.org_id org_id,h_user.grade_id grade_id,h_user.class_id clas_id,2 public_private,
+                           | (select distinct  h_user.org_id org_id,h_user.grade_id grade_id,h_user.class_id clas_id,h_user.org_type public_private,
                            |        h_user.teacher_num teacher_num,case when h_tdaily.teacher_daily_num is not null then h_tdaily.teacher_daily_num else 0 end teacher_daily,
                            |		h_user.student_num student_num,case when h_sdaily.studnet_daily_num is not null then  h_sdaily.studnet_daily_num else 0 end student_daily_num,
                            |		h_user.class_num class_num,  case when h_cdaily.class_daily_num is not null then  h_cdaily.class_daily_num else 0 end class_daily,
@@ -143,13 +143,13 @@ object TeachingWeekly {
     sql(str_drop_tsad)
     val str_create_tsad=s""" create table test.teaching_subject_answer_distribution as
                            |select cast(concat('${DAY}',row_number() over()) as bigint) id , h1.* from
-                           |(select distinct   h.org_id org_id,2 public_private,h.grade_id grade_id,h.subject_name subject_name,
+                           |(select distinct   h.org_id org_id,h.org_type public_private,h.grade_id grade_id,h.subject_name subject_name,
                            |h.as_sk_num as_sk_num,h.as_sk_number as_sk_number,h.as_zy_num  as_zy_num,h.as_zy_number as_zy_number,h.as_cp_num  as_cp_num,
                            |h.as_cp_number as_cp_number,h.as_yx_num as_yx_num,h.as_yx_number  as_yx_number,
                            |year('${DATE6AGO}') leran_year, weekofyear('${DATE6AGO}') leran_week,h.pad_class is_pad, '${DATE}' time
                            | from
                            |	(select
-                           |	distinct  s.org_id org_id,0 grade_id,s.subject_name subject_name,
+                           |	distinct  s.org_id org_id,s.org_type org_type,0 grade_id,s.subject_name subject_name,
                            |	 case when st.cp_answer_num is not null then st.cp_answer_num else 0 end as_cp_num,
                            |	 case when st.cp_user_num is not null then st.cp_user_num else 0 end as_cp_number,
                            |	 case when st.sk_answer_num is not null then st.sk_answer_num else 0 end as_sk_num,
@@ -165,7 +165,7 @@ object TeachingWeekly {
                            |	) st on st.org_id=s.org_id and s.subject_name=st.subject_name
                            |	union all
                            |	select
-                           |	distinct  s.org_id org_id,0 grade_id,s.subject_name subject_name,
+                           |	distinct  s.org_id org_id,s.org_type org_type,0 grade_id,s.subject_name subject_name,
                            |	 case when st.cp_answer_num is not null then st.cp_answer_num else 0 end as_cp_num,
                            |	 case when st.cp_user_num is not null then st.cp_user_num else 0 end as_cp_number,
                            |	 case when st.sk_answer_num is not null then st.sk_answer_num else 0 end as_sk_num,
@@ -181,7 +181,7 @@ object TeachingWeekly {
                            |	) st on st.org_id=s.org_id and s.subject_name=st.subject_name
                            |	union all
                            |	select
-                           |	distinct  s.org_id org_id,case when st.grade_id is not null then st.grade_id else 9999 end grade_id,
+                           |	distinct  s.org_id org_id,s.org_type org_type,case when st.grade_id is not null then st.grade_id else 9999 end grade_id,
                            |	 s.subject_name subject_name,
                            |	 case when st.cp_answer_num is not null then st.cp_answer_num else 0 end as_cp_num,
                            |	 case when st.cp_user_num is not null then st.cp_user_num else 0 end as_cp_number,
@@ -200,7 +200,7 @@ object TeachingWeekly {
                            |	) st on st.org_id=s.org_id and s.subject_name=st.subject_name and st.stage_id=s.stage_id
                            |	union all
                            |	select
-                           |	distinct  s.org_id org_id,case when st.grade_id is not null then st.grade_id else 9999 end grade_id,
+                           |	distinct  s.org_id org_id,s.org_type org_type,case when st.grade_id is not null then st.grade_id else 9999 end grade_id,
                            |	 s.subject_name subject_name,
                            |	 case when st.cp_answer_num is not null then st.cp_answer_num else 0 end as_cp_num,
                            |	 case when st.cp_user_num is not null then st.cp_user_num else 0 end as_cp_number,
@@ -224,11 +224,11 @@ object TeachingWeekly {
     sql(str_drop_tstu)
     val str_create_tstu=s""" create table test.teaching_subject_teacher_usage as
                            |select cast(concat('${DAY}',row_number() over()) as bigint) id,h1.* from
-                           |(select distinct  h.org_id org_id,h.grade_id grade_id,2 public_private,h.subject_name  subject_name,h.system_id system_id,h.login_num th_login_number,
+                           |(select distinct  h.org_id org_id,h.grade_id grade_id,h.org_type public_private,h.subject_name  subject_name,h.system_id system_id,h.login_num th_login_number,
                            |h.respackage_num th_zyb_number,h.sk_num fb_sk_number,h.cp_num fb_cp_number,h.yx_num fb_yx_number,h.zy_num fb_zy_number,
                            |h.manage_class_num th_glc_number,h.per_num per_capita_answer,year('${DATE6AGO}') leran_year, weekofyear('${DATE6AGO}') leran_week,h.pad_class is_pad,'${DATE}' time
                            |  from
-                           |(select distinct ss.org_id,0 grade_id,ss.system_id,9999 pad_class,ss.subject_name,
+                           |(select distinct ss.org_id,ss.org_type,0 grade_id,ss.system_id,9999 pad_class,ss.subject_name,
                            |	case when tl.login_num is not null then tl.login_num else 0 end login_num,
                            |    case when sr.respackage_num is not null then sr.respackage_num else 0 end  respackage_num,
                            |    case when tsp.fb_sk_number	is not null then  tsp.fb_sk_number else 0 end  sk_num,
@@ -257,8 +257,8 @@ object TeachingWeekly {
                            |(select * from test.student_subject_answer_summary where grade_id=0 and pad_class=9999
                            |) sps on sps.org_id=ss.org_id and sps.subject_name=ss.subject_name and sps.system_id=ss.system_id
                            |
- |union all
-                           |select distinct ss.org_id,0 grade_id ,ss.system_id,
+                           |union all
+                           |select distinct ss.org_id,ss.org_type,0 grade_id ,ss.system_id,
                            |	case when sr.pad_class is not null then sr.pad_class else 0 end pad_class,ss.subject_name,
                            |	case when tl.login_num is not null then tl.login_num else 0 end login_num,
                            |    case when sr.respackage_num is not null then sr.respackage_num else 0 end  respackage_num,
@@ -288,7 +288,7 @@ object TeachingWeekly {
                            |(select * from test.student_subject_answer_summary where grade_id=0 and pad_class!=9999
                            |) sps on sps.org_id=ss.org_id and sps.subject_name=ss.subject_name and sps.system_id=ss.system_id
                            |union all
-                           |select distinct ss.org_id,
+                           |select distinct ss.org_id,ss.org_type,
                            |    case when ss.grade_id is not null then ss.grade_id else 9999 end grade_id,
                            |	ss.system_id system_id,
                            |	9999 pad_class,ss.subject_name,
@@ -335,7 +335,7 @@ object TeachingWeekly {
                            |) sps on sps.org_id=ss.org_id and sps.subject_name=ss.subject_name and sps.stage_id=ss.stage_id
                            |		and sps.system_id=ss.system_id
                            |union all
-                           |select distinct ss.org_id,
+                           |select distinct ss.org_id,ss.org_type,
                            |  case when ss.grade_id is not null then ss.grade_id else 9999 end grade_id,
                            |	ss.system_id system_id,
                            |	case when sr.pad_class is not null then sr.pad_class else 0 end pad_class, ss.subject_name,
@@ -390,11 +390,11 @@ object TeachingWeekly {
        sql(str_drop_tsu)
        val str_create_tsu=s""" create table test.teaching_subject_usage as
                              |select cast(concat('${DAY}',row_number() over()) as bigint) id,h1.* from
-                             |(select  distinct  h.org_id  org_id,h.grade_id grade_id,2 public_private,h.subject_name subject_name,
+                             |(select  distinct  h.org_id  org_id,h.grade_id grade_id,h.org_type public_private,h.subject_name subject_name,
                              |h.respackage_num th_zyb_number,h.sk_num fb_sk_number,h.cp_num fb_cp_number,h.yx_num fb_yx_number,h.zy_num fb_zy_number,
                              |h.manage_class_num th_glc_number,h.per_num per_capita_answer,year('${DATE6AGO}') leran_year, weekofyear('${DATE6AGO}') leran_week,h.pad_class is_pad,'${DATE}' time from
                              |(
-                             |select distinct ss.org_id,0 grade_id ,9999 pad_class,ss.subject_name,
+                             |select distinct ss.org_id,ss.org_type,0 grade_id ,9999 pad_class,ss.subject_name,
                              |    case when sr.respackage_num is not null then sr.respackage_num else 0 end  respackage_num,
                              |    case when tsp.fb_sk_number	is not null then  tsp.fb_sk_number else 0 end  sk_num,
                              |	case when tsp.fb_zy_number  is not null then  tsp.fb_zy_number else 0 end  zy_num,
@@ -416,7 +416,7 @@ object TeachingWeekly {
                              |(select * from test.subject_answer_summary where grade_id=0 and pad_class=9999
                              |) sps on sps.org_id=ss.org_id and sps.subject_name=ss.subject_name
                              |union all
-                             |select distinct ss.org_id,0 grade_id ,
+                             |select distinct ss.org_id,ss.org_type,0 grade_id ,
                              |case when sr.pad_class is not null then sr.pad_class else 0 end pad_class,ss.subject_name,
                              |    case when sr.respackage_num is not null then sr.respackage_num else 0 end  respackage_num,
                              |	case when tsp.fb_sk_number	is not null then  tsp.fb_sk_number else 0 end  sk_num,
@@ -439,7 +439,7 @@ object TeachingWeekly {
                              |(select * from test.subject_answer_summary where grade_id=0 and pad_class!=9999
                              |) sps on sps.org_id=ss.org_id and sps.subject_name=ss.subject_name
                              |union all
-                             |select distinct ss.org_id,
+                             |select distinct ss.org_id,ss.org_type,
                              |    case when sr.grade_id is not null then sr.grade_id else 9999 end grade_id,9999 pad_class,ss.subject_name,
                              |    case when sr.respackage_num is not null then sr.respackage_num else 0 end  respackage_num ,
                              |	case when tsp.fb_sk_number	is not null then  tsp.fb_sk_number else 0 end  sk_num,
@@ -472,7 +472,7 @@ object TeachingWeekly {
                              |) sps on sps.org_id=ss.org_id and sps.subject_name=ss.subject_name and sps.stage_id=ss.stage_id
                              |where  sr.grade_id=tsp.grade_id and  tsp.grade_id=sps.grade_id
                              |union all
-                             |select distinct ss.org_id,
+                             |select distinct ss.org_id,ss.org_type,
                              |    case when sr.grade_id is not null then sr.grade_id else 9999 end grade_id,
                              |	case when sr.pad_class is not null then sr.pad_class else 0 end pad_class, ss.subject_name,
                              |    case when sr.respackage_num is not null then sr.respackage_num else 0 end  respackage_num ,
@@ -512,13 +512,13 @@ object TeachingWeekly {
        sql(str_drop_ttsu)
        val str_create_ttsu=s"""  create table test.teaching_teacher_student_usage as
                              |select cast(concat('${DAY}',row_number() over()) as bigint) id,h1.* from
-                             |(select    distinct  h.org_id,h.grade_id,2 public_private,h.pad_class is_pad,h.kj_num,
+                             |(select    distinct  h.org_id,h.grade_id,h.org_type public_private,h.pad_class is_pad,h.kj_num,
                              |h.dxa_num,h.ja_num,h.sp_num,h.tp_num,h.wk_num,h.wd_num,h.yp_num,
                              |h.wk_app_num,h.xt_app_num,h.xiti_user_num,h.xta_num,h.xtr_num,h.xtl,
                              |h.zya_num,h.zyr_num,h.zyl,h.cpa_num,h.cpr_num,h.cpl,h.fxa_num,h.fxr_num,h.fxl,h.yxa_num,h.yxr_num,h.yxl,
                              |h.ska_num,h.skr_num,h.skl,year('${DATE6AGO}') leran_year, weekofyear('${DATE6AGO}') leran_week, cast(h.time as date) time
                              |from
-                             |(select st.org_id,0 grade_id,9999 pad_class,
+                             |(select st.org_id,st.org_type,0 grade_id,9999 pad_class,
                              |case when tus.kj_num is not null then tus.kj_num else 0 end kj_num,
                              |case when tus.dxa_num is not null then tus.dxa_num else 0 end dxa_num,
                              |case when tus.ja_num is not null then tus.ja_num else 0 end ja_num,
@@ -563,7 +563,7 @@ object TeachingWeekly {
                              |(select * from test.student_scence_summary where grade_id=0 and pad_class=9999
                              |) sss on  sss.org_id=st.org_id and sss.time=st.time
                              |union all
-                             |select st.org_id,0 grade_id,
+                             |select st.org_id,st.org_type,0 grade_id,
                              |case when sss.pad_class  is not null then  sss.pad_class else 0 end pad_class,
                              |case when tus.kj_num is not null then tus.kj_num else 0 end kj_num,
                              |case when tus.dxa_num is not null then tus.dxa_num else 0 end dxa_num,
@@ -609,7 +609,7 @@ object TeachingWeekly {
                              |(select * from test.student_scence_summary where grade_id=0 and pad_class!=9999
                              |) sss on  sss.org_id=st.org_id and sss.time=st.time
                              |union all
-                             |select st.org_id,
+                             |select st.org_id,st.org_type,
                              |case when sss.grade_id is not null then  sss.grade_id
                              |     when tus.grade_id is not null then  tus.grade_id
                              |     when sas.grade_id is not null then  sas.grade_id
@@ -659,7 +659,7 @@ object TeachingWeekly {
                              |(select * from test.student_scence_summary where grade_id!=0 and pad_class=9999
                              |) sss on  sss.org_id=st.org_id and sss.time=st.time
                              |union all
-                             |select st.org_id,
+                             |select st.org_id,st.org_type,
                              |case when sss.grade_id is not null then  sss.grade_id
                              |     when tus.grade_id is not null then  tus.grade_id
                              |     when sas.grade_id is not null then  sas.grade_id
